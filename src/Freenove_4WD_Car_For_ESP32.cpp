@@ -7,20 +7,20 @@
 #include "Freenove_4WD_Car_WS2812.h"
 
 /////////////////////PCA9685 drive area///////////////////////////////////
-PCA9685 pca9685;//Instantiate a PCA9685 object
+PCA9685 pca9685; // Instantiate a PCA9685 object
 
-//PCA9685 initialization
+// PCA9685 initialization
 void PCA9685_Setup(void)
 {
   Wire.begin(PCA9685_SDA, PCA9685_SCL);
   pca9685.setupSingleDevice(Wire, PCA9685_ADDRESS);
   pca9685.setToFrequency(FREQUENCY);
-  Motor_Move(0,0,0,0);
+  Motor_Move(0, 0, 0, 0);
   Servo_1_Angle(90);
   Servo_2_Angle(90);
 }
 
-//Set the rotation parameters of servo 1, and the parameters are 0-180 degrees
+// Set the rotation parameters of servo 1, and the parameters are 0-180 degrees
 void Servo_1_Angle(int angle)
 {
   float s1_angle = constrain(angle, 0, 180);
@@ -35,7 +35,7 @@ void Servo_1_Angle(int angle)
   pca9685.setChannelPulseWidth(PCA9685_CHANNEL_0, int(s1_angle));
 }
 
-//Set the rotation parameters of servo 2, and the parameters are 0-180 degrees
+// Set the rotation parameters of servo 2, and the parameters are 0-180 degrees
 void Servo_2_Angle(int angle)
 {
   float s2_angle = constrain(angle, 80, 180);
@@ -50,7 +50,45 @@ void Servo_2_Angle(int angle)
   pca9685.setChannelPulseWidth(PCA9685_CHANNEL_1, int(s2_angle));
 }
 
-//A function to control the car motor
+// Servo sweep function
+void Servo_Sweep(int servo_id, int angle_start, int angle_end)
+{
+  if (servo_id == 1)
+  {
+    angle_start = constrain(angle_start, 0, 180);
+    angle_end = constrain(angle_end, 0, 180);
+  }
+  else if (servo_id == 2)
+  {
+    angle_start = constrain(angle_start, 90, 150);
+    angle_end = constrain(angle_end, 90, 150);
+  }
+
+  if (angle_start > angle_end)
+  {
+    for (int i = angle_start; i >= angle_end; i--)
+    {
+      if (servo_id == 1)
+        Servo_1_Angle(i);
+      else if (servo_id == 2)
+        Servo_2_Angle(i);
+      delay(10);
+    }
+  }
+  if (angle_start < angle_end)
+  {
+    for (int i = angle_start; i <= angle_end; i++)
+    {
+      if (servo_id == 1)
+        Servo_1_Angle(i);
+      else if (servo_id == 2)
+        Servo_2_Angle(i);
+      delay(10);
+    }
+  }
+}
+
+// A function to control the car motor
 void Motor_Move(int m1_speed, int m2_speed, int m3_speed, int m4_speed)
 {
   m1_speed = MOTOR_1_DIRECTION * constrain(m1_speed, MOTOR_SPEED_MIN, MOTOR_SPEED_MAX);
@@ -132,12 +170,12 @@ void Motor_Move(int m1_speed, int m2_speed, int m3_speed, int m4_speed)
 }
 
 //////////////////////Buzzer drive area///////////////////////////////////
-//Buzzer pin definition
-#define PIN_BUZZER 2                    //Define the pins for the ESP32 control buzzer
-#define BUZZER_CHN 0                    //Define the PWM channel for ESP32
-#define BUZZER_FREQUENCY 2000           //Define the resonant frequency of the buzzer 
+// Buzzer pin definition
+#define PIN_BUZZER 2          // Define the pins for the ESP32 control buzzer
+#define BUZZER_CHN 0          // Define the PWM channel for ESP32
+#define BUZZER_FREQUENCY 2000 // Define the resonant frequency of the buzzer
 
-//Buzzer initialization
+// Buzzer initialization
 void Buzzer_Setup(void)
 {
   pinMode(PIN_BUZZER, OUTPUT);
@@ -147,7 +185,7 @@ void Buzzer_Setup(void)
   delay(10);
 }
 
-//Buzzer variable frequency
+// Buzzer variable frequency
 void Buzzer_Variable(bool enable, int frequency)
 {
   if (enable == 1)
@@ -159,7 +197,7 @@ void Buzzer_Variable(bool enable, int frequency)
     ledcWriteTone(BUZZER_CHN, 0);
 }
 
-//Buzzer alarm function
+// Buzzer alarm function
 void Buzzer_Alarm(bool enable)
 {
   if (enable == 0)
@@ -168,7 +206,7 @@ void Buzzer_Alarm(bool enable)
     ledcWriteTone(BUZZER_CHN, BUZZER_FREQUENCY);
 }
 
-//Buzzer Alert function
+// Buzzer Alert function
 void Buzzer_Alert(int beat, int rebeat)
 {
   beat = constrain(beat, 1, 9);
@@ -188,11 +226,11 @@ void Buzzer_Alert(int beat, int rebeat)
 }
 
 ////////////////////Battery drive area/////////////////////////////////////
-#define PIN_BATTERY        32        //Set the battery detection voltage pin
-float batteryVoltage     = 0;        //Battery voltage variable
-float batteryCoefficient = 3.7;        //Set the proportional coefficient
+#define PIN_BATTERY 32          // Set the battery detection voltage pin
+float batteryVoltage = 0;       // Battery voltage variable
+float batteryCoefficient = 3.7; // Set the proportional coefficient
 
-//Gets the battery ADC value
+// Gets the battery ADC value
 int Get_Battery_Voltage_ADC(void)
 {
   pinMode(PIN_BATTERY, INPUT);
@@ -201,32 +239,32 @@ int Get_Battery_Voltage_ADC(void)
   return batteryADC;
 }
 
-//Get the battery voltage value
+// Get the battery voltage value
 float Get_Battery_Voltage(void)
 {
   int batteryADC = Get_Battery_Voltage_ADC();
-  batteryVoltage = (batteryADC / 4096.0  * 3.9 ) * batteryCoefficient;
+  batteryVoltage = (batteryADC / 4096.0 * 3.9) * batteryCoefficient;
   return batteryVoltage;
 }
 
 /////////////////////Photosensitive drive area//////////////////////////
-#define PHOTOSENSITIVE_PIN   33
-int light_init_value = 0;   //Set the car's initial environment ADC value
-//Photosensitive initialization
+#define PHOTOSENSITIVE_PIN 33
+int light_init_value = 0; // Set the car's initial environment ADC value
+// Photosensitive initialization
 void Light_Setup(void)
 {
   pinMode(PHOTOSENSITIVE_PIN, INPUT);
-  light_init_value = Get_Photosensitive();   //Set the car's initial environment ADC value
+  light_init_value = Get_Photosensitive(); // Set the car's initial environment ADC value
 }
 
-//Gets the photosensitive resistance value
+// Gets the photosensitive resistance value
 int Get_Photosensitive(void)
 {
   int photosensitiveADC = analogRead(PHOTOSENSITIVE_PIN);
   return photosensitiveADC;
 }
 
-//Light Car
+// Light Car
 void Light_Car(int mode)
 {
   if (mode == 1)
@@ -250,33 +288,33 @@ void Light_Car(int mode)
 }
 
 /////////////////////Track drive area//////////////////////////////
-#define PCF8574_ADDRESS 0x20     //Tracking module IIC address
-#define PCF8574_SDA     13       //Define the SDA pin number
-#define PCF8574_SCL     14       //Define the SCL pin number
-#define SPEED_LV4       (4000)
-#define SPEED_LV3       (3000)
-#define SPEED_LV2       (2500)
-#define SPEED_LV1       (1500)
+#define PCF8574_ADDRESS 0x20 // Tracking module IIC address
+#define PCF8574_SDA 13       // Define the SDA pin number
+#define PCF8574_SCL 14       // Define the SCL pin number
+#define SPEED_LV4 (4000)
+#define SPEED_LV3 (3000)
+#define SPEED_LV2 (2500)
+#define SPEED_LV1 (1500)
 
 unsigned char sensorValue[4] = {0};
 PCF8574 TRACK_SENSOR(PCF8574_ADDRESS);
 
-//Trace module initialization
+// Trace module initialization
 void Track_Setup(void)
 {
   TRACK_SENSOR.begin(PCF8574_SDA, PCF8574_SCL);
 }
 
-//Tracking module reading
+// Tracking module reading
 void Track_Read(void)
 {
-  sensorValue[3] = (TRACK_SENSOR.read8() & 0x07);//composite value
-  sensorValue[0] = (sensorValue[3] & 0x01) >> 0; //On the left - 1
-  sensorValue[1] = (sensorValue[3] & 0x02) >> 1; //In the middle - 2
-  sensorValue[2] = (sensorValue[3] & 0x04) >> 2; //On the right - 4
+  sensorValue[3] = (TRACK_SENSOR.read8() & 0x07); // composite value
+  sensorValue[0] = (sensorValue[3] & 0x01) >> 0;  // On the left - 1
+  sensorValue[1] = (sensorValue[3] & 0x02) >> 1;  // In the middle - 2
+  sensorValue[2] = (sensorValue[3] & 0x04) >> 2;  // On the right - 4
 }
 
-//Track Car
+// Track Car
 void Track_Car(int mode)
 {
   if (mode == 1)
@@ -284,42 +322,42 @@ void Track_Car(int mode)
     Track_Read();
     switch (sensorValue[3])
     {
-      case 2:   //010
-      case 5:   //101
-        Emotion_SetMode(3);
-        Motor_Move(SPEED_LV1, SPEED_LV1, SPEED_LV1, SPEED_LV1);    //Move Forward
-        break;
-      case 0:   //000
-      case 7:   //111
-        Emotion_SetMode(6);
-        Motor_Move(0, 0, 0, 0);                                    //Stop
-        break;
-      case 1:   //001
-      case 3:   //011
-        Emotion_SetMode(4);
-        Motor_Move(-SPEED_LV3, -SPEED_LV3, SPEED_LV4, SPEED_LV4);  //Turn Left
-        break;
-      case 4:   //100
-      case 6:   //110
-        Emotion_SetMode(5);
-        Motor_Move(SPEED_LV4, SPEED_LV4 , - SPEED_LV3, -SPEED_LV3);//Turn Right
-        break;
+    case 2: // 010
+    case 5: // 101
+      Emotion_SetMode(3);
+      Motor_Move(SPEED_LV1, SPEED_LV1, SPEED_LV1, SPEED_LV1); // Move Forward
+      break;
+    case 0: // 000
+    case 7: // 111
+      Emotion_SetMode(6);
+      Motor_Move(0, 0, 0, 0); // Stop
+      break;
+    case 1: // 001
+    case 3: // 011
+      Emotion_SetMode(4);
+      Motor_Move(-SPEED_LV3, -SPEED_LV3, SPEED_LV4, SPEED_LV4); // Turn Left
+      break;
+    case 4: // 100
+    case 6: // 110
+      Emotion_SetMode(5);
+      Motor_Move(SPEED_LV4, SPEED_LV4, -SPEED_LV3, -SPEED_LV3); // Turn Right
+      break;
 
-      default:
-        break;
+    default:
+      break;
     }
   }
 }
 
 //////////////////////Car drive area////////////////////////////////////////
 int carFlag = 0;
-//set car mode
+// set car mode
 void Car_SetMode(int mode)
 {
   carFlag = mode;
 }
 
-//select it to run car
+// select it to run car
 void Car_Select(int mode)
 {
   if (mode == 1)
@@ -338,11 +376,5 @@ void Car_Select(int mode)
     Track_Car(0);
   }
 }
-
-
-
-
-
-
 
 //

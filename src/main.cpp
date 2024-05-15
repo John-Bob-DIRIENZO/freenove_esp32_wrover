@@ -64,6 +64,8 @@ void WiFi_Init()
 
 void setup()
 {
+    delay(5000);
+
     if (!WiFi.config(localIP, localGateway, localSubnet, primaryDNS, secondaryDNS))
     {
         Serial.println("STA Failed to configure");
@@ -95,10 +97,27 @@ void setup()
 
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { 
-                Serial.println("New request");
-                request->send_P(200, "text/html", "hello from esp32"); });
+                camera_fb_t *fb = NULL;
+                fb = esp_camera_fb_get();
+
+                Serial.println(fb != NULL);
+
+                        if (fb != NULL)
+                        {
+                            uint8_t slen[4];
+                            slen[0] = fb->len >> 0;
+                            slen[1] = fb->len >> 8;
+                            slen[2] = fb->len >> 16;
+                            slen[3] = fb->len >> 24;
+                            // client.write(slen, 4);
+                            client.write(fb->buf, fb->len);
+                            request->send_P(200, "image", fb->buf, fb->len);
+                            Serial.println("Camera send");
+                            esp_camera_fb_return(fb);
+                        } });
 
     server.begin();
+    Servo_1_Angle(60);
     Emotion_SetMode(1);
 }
 
@@ -114,7 +133,20 @@ void loop()
     // }
     // client.loop();
 
-    Emotion_Show(emotion_task_mode);
+    // Track_Read();
+    // Serial.print(sensorValue[0]);
+    // Serial.print(" ");
+    // Serial.print(sensorValue[1]);
+    // Serial.print(" ");
+    // Serial.print(sensorValue[2]);
+    // Serial.print(" ");
+    // Serial.print(sensorValue[3]);
+    // Serial.println(" ");
+
+    // delay(1000);
+
+    Emotion_Show(emotion_task_mode); // Led matrix display function
+    WS2812_Show(ws2812_task_mode);   // Car color lights display function
 }
 
 // put function definitions here:
@@ -143,17 +175,16 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
             Serial.println(error.c_str());
             return;
         }
-        
-        int cmd = doc["cmd"]; // 1
+
+        int cmd = doc["cmd"];
 
         if (1 == cmd)
         {
-            Serial.println("Changer la vitesse");
             JsonArray data = doc["data"];
-            int data_0 = data[0]; // 2000
-            int data_1 = data[1]; // 2000
-            int data_2 = data[2]; // 2000
-            int data_3 = data[3]; // 2000
+            int data_0 = data[0];
+            int data_1 = data[1];
+            int data_2 = data[2];
+            int data_3 = data[3];
 
             Motor_Move(data_0, data_1, data_2, data_3);
         }
@@ -164,16 +195,51 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         }
         else if (3 == cmd)
         {
-            Serial.println("Changer la vitesse");
             JsonArray angles = doc["data"];
-            int angle_0 = angles[0]; // 2000
-            int angle_1 = angles[1]; // 2000
-            Servo_1_Angle(angle_0);  // Set the Angle value of servo 1 to 0 to 180°
+            int angle_0 = angles[0];
+            int angle_1 = angles[1];
+            Servo_1_Angle(angle_0); // Set the Angle value of servo 1 to 0 to 180°
             Servo_2_Angle(angle_1);
+        }
+        else if (4 == cmd)
+        {
+            int led_mode = doc["data"];
+            WS2812_SetMode(led_mode);
+        }
+        else if (5 == cmd)
+        {
+            JsonArray led_color = doc["data"];
+            int led_color_0 = led_color[0];
+            int led_color_1 = led_color[1];
+            int led_color_2 = led_color[2];
+            int led_color_3 = led_color[3];
+
+            WS2812_Set_Color_1(led_color_0, led_color_1, led_color_2, led_color_3);
+        }
+        else if (6 == cmd)
+        {
+            JsonArray led_color_2 = doc["data"];
+            int led_color_2_0 = led_color_2[0];
+            int led_color_2_1 = led_color_2[1];
+            int led_color_2_2 = led_color_2[2];
+            int led_color_2_3 = led_color_2[3];
+
+            WS2812_Set_Color_2(led_color_2_0, led_color_2_1, led_color_2_2, led_color_2_3);
+        }
+        else if (7 == cmd)
+        {
+            bool alarm = doc["data"] == 1;
+            Buzzer_Alarm(alarm);
+        }
+        else if (8 == cmd)
+        {
+            JsonArray buzzer_data = doc["data"];
+            int alarm_on = buzzer_data[0] == 1;
+            int frequency_hz = buzzer_data[1];
+            Buzzer_Variable(alarm_on, frequency_hz);
         }
 
         notifyClients();
-
     }
 }
 
