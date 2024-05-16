@@ -11,6 +11,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include <limits.h>
 
 // Ressources
 // https://randomnerdtutorials.com/esp32-websocket-server-arduino/#1
@@ -24,7 +25,8 @@ const char *password_wifi = "33500a9695df";
 
 // Add your MQTT Broker IP address, example:
 // const char* mqtt_server = "192.168.1.144";
-const char *mqtt_server = "YOUR_MQTT_BROKER_IP_ADDRESS";
+const char *mqtt_server = "192.168.145.40";
+const int mqtt_interval_ms = 5000;
 
 // Setup the desired IP address of your car
 IPAddress localIP(192, 168, 145, 49);
@@ -43,6 +45,13 @@ PubSubClient client(espClient);
 // WiFiServer server_Cmd(4000);
 WiFiServer server_Camera(7000);
 bool videoFlag = 0;
+
+long last_message = 0;
+
+int distance[4];          // Storage of ultrasonic data
+int sensor_v;             // Int cast of track sensor data
+char buff[6];             // Buffer to store the battery voltage data
+char ultrasonic_buff[10]; // Buffer to store the Ultrasonic data
 
 // put function declarations here:
 void WiFi_Init();
@@ -66,25 +75,27 @@ void setup()
 {
     delay(5000);
 
+    Serial.begin(115200);
+    Serial.setDebugOutput(true);
+
     if (!WiFi.config(localIP, localGateway, localSubnet, primaryDNS, secondaryDNS))
     {
         Serial.println("STA Failed to configure");
     }
 
     Buzzer_Setup(); // Buzzer initialization
-    Serial.begin(115200);
-    Serial.setDebugOutput(true);
-    WiFi_Init();   // WiFi paramters initialization
-    WiFi_Setup(0); // Start AP Mode. If you want to connect to a router, change 1 to 0.
+    WiFi_Init();    // WiFi paramters initialization
+    WiFi_Setup(0);  // Start AP Mode. If you want to connect to a router, change 1 to 0.
     // server_Cmd.begin(4000);    // Start the command server
     server_Camera.begin(7000); // Turn on the camera server
 
-    cameraSetup();   // Camera initialization
-    Emotion_Setup(); // Emotion initialization
-    WS2812_Setup();  // WS2812 initialization
-    PCA9685_Setup(); // PCA9685 initialization
-    Light_Setup();   // Light initialization
-    Track_Setup();   // Track initialization
+    cameraSetup();      // Camera initialization
+    Emotion_Setup();    // Emotion initialization
+    WS2812_Setup();     // WS2812 initialization
+    PCA9685_Setup();    // PCA9685 initialization
+    Light_Setup();      // Light initialization
+    Track_Setup();      // Track initialization
+    Ultrasonic_Setup(); // Initialize the ultrasonic module
 
     // Cette section serait peut être à virer...
     disableCore0WDT(); // Turn off the watchdog function in kernel 0
@@ -127,23 +138,31 @@ void loop()
     ws.cleanupClients();
 
     // The MQTT part
-    // if (!client.connected())
-    // {
-    //     reconnect();
-    // }
-    // client.loop();
+    if (!client.connected())
+    {
+        reconnect();
+    }
+    client.loop();
 
-    // Track_Read();
-    // Serial.print(sensorValue[0]);
-    // Serial.print(" ");
-    // Serial.print(sensorValue[1]);
-    // Serial.print(" ");
-    // Serial.print(sensorValue[2]);
-    // Serial.print(" ");
-    // Serial.print(sensorValue[3]);
-    // Serial.println(" ");
+    long now = millis();
+    if (now - last_message > mqtt_interval_ms)
+    {
+        last_message = now;
 
-    // delay(1000);
+        // Battery level
+        dtostrf(Get_Battery_Voltage(), 5, 2, buff);
+        client.publish("esp32/battery", buff);
+
+        // Track Read
+        Track_Read();
+        sensor_v = static_cast<int>(sensorValue[3]);
+        char const *n_char = std::to_string(sensor_v).c_str();
+        client.publish("esp32/track", n_char);
+
+        // Ultrasonic Data
+        dtostrf(Get_Sonar(), 5, 2, ultrasonic_buff);
+        client.publish("esp32/sonar", ultrasonic_buff);
+    }
 
     Emotion_Show(emotion_task_mode); // Led matrix display function
     WS2812_Show(ws2812_task_mode);   // Car color lights display function

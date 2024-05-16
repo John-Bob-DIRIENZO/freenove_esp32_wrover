@@ -61,6 +61,10 @@ extern int carFlag;
 void Car_SetMode(int mode); // set the car mode
 void Car_Select(int mode);  ////select it to run car:0-command car，1-light car ，2-track car
 
+/////////////////////Ultrasonic drive area/////////////////////////////////
+void Ultrasonic_Setup(void);//Ultrasonic initialization
+float Get_Sonar(void);//Obtain ultrasonic distance data
+
 #endif
 
 //

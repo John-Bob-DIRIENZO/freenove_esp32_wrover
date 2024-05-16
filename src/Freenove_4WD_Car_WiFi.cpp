@@ -29,7 +29,7 @@ void WiFi_Setup(bool WiFi_Mode)
     WiFi.setAutoConnect(true);
     WiFi.setAutoReconnect(true);
 
-    Serial.print("\nWaiting for WiFi... ");
+    Serial.print("\nWaiting for WiFi...");
     while (WiFi.isConnected() != true) {
       Serial.print(".");
       delay(500);
@@ -44,7 +44,7 @@ void WiFi_Setup(bool WiFi_Mode)
     Serial.print("\nThen you can enter: '");
     Serial.print(local_ip);
     Serial.println("' to connect the car in Freenove app.");
-    Buzzer_Alarm(1);
+    // Buzzer_Alarm(1);
     delay(100);
     Buzzer_Alarm(0);
   }
