@@ -19,20 +19,17 @@
 // https://randomnerdtutorials.com/esp32-static-fixed-ip-address-arduino-ide/
 // https://github.com/Freenove/Freenove_4WD_Car_Kit_for_ESP32/tree/master
 
-// Replace the next variables with your SSID/Password combination
-const char *ssid_wifi = "OnePlus 7 Pro";
-const char *password_wifi = "33500a9695df";
+char *ssid_wifi = "OnePlus 7 Pro";    // Le nom du réseau WiFi
+char *password_wifi = "33500a9695df"; // Le password du WiFi
 
-// Add your MQTT Broker IP address, example:
-// const char* mqtt_server = "192.168.1.144";
-const char *mqtt_server = "192.168.145.40";
-const int mqtt_interval_ms = 5000;
+const char *mqtt_server = "192.168.145.40"; // L'IP de votre broker MQTT
+const int mqtt_interval_ms = 5000;          // L'interval en ms entre deux envois de données
 
-// Setup the desired IP address of your car
-IPAddress localIP(192, 168, 145, 49);
+IPAddress localIP(192, 168, 145, 49); // l'IP que vous voulez donner à votre voiture
 
-IPAddress localGateway(192, 168, 145, 55);
-IPAddress localSubnet(255, 255, 255, 0);
+IPAddress localGateway(192, 168, 145, 55); // L'IP de la gateway de votre réseau
+IPAddress localSubnet(255, 255, 255, 0);   // Le masque de sous réseau
+
 IPAddress primaryDNS(8, 8, 8, 8);
 IPAddress secondaryDNS(8, 8, 4, 4);
 
@@ -64,17 +61,15 @@ void reconnect();
 
 void WiFi_Init()
 {
-    ssid_Router = "OnePlus 7 Pro";    // Modify according to your router name
-    password_Router = "33500a9695df"; // Modify according to your router password
-    ssid_AP = "Sunshine";             // ESP32 turns on an AP and calls it Sunshine
-    password_AP = "Sunshine";         // Set your AP password for ESP32 to Sunshine
-    frame_size = FRAMESIZE_CIF;       // 400*296
+    ssid_Router = ssid_wifi;         // Modify according to your router name
+    password_Router = password_wifi; // Modify according to your router password
+    ssid_AP = "Sunshine";            // ESP32 turns on an AP and calls it Sunshine
+    password_AP = "Sunshine";        // Set your AP password for ESP32 to Sunshine
+    frame_size = FRAMESIZE_CIF;      // 400*296
 }
 
 void setup()
 {
-    delay(5000);
-
     Serial.begin(115200);
     Serial.setDebugOutput(true);
 
@@ -128,14 +123,21 @@ void setup()
                         } });
 
     server.begin();
+
+    // Init the state of the car
     Servo_1_Angle(60);
+    Servo_2_Angle(0);
     Emotion_SetMode(1);
+    WS2812_SetMode(1);
 }
 
 void loop()
 {
     // put your main code here, to run repeatedly:
     ws.cleanupClients();
+
+    Emotion_Show(emotion_task_mode); // Led matrix display function
+    WS2812_Show(ws2812_task_mode);   // Car color lights display function
 
     // The MQTT part
     if (!client.connected())
@@ -149,9 +151,11 @@ void loop()
     {
         last_message = now;
 
+        // Les led et la batteries sont branchés tous les deux sur le pin 32
+        // du coup, lire la valeur de batterie fait freeze la batterie
         // Battery level
-        dtostrf(Get_Battery_Voltage(), 5, 2, buff);
-        client.publish("esp32/battery", buff);
+        // dtostrf(Get_Battery_Voltage(), 5, 2, buff);
+        // client.publish("esp32/battery", buff);
 
         // Track Read
         Track_Read();
@@ -162,16 +166,17 @@ void loop()
         // Ultrasonic Data
         dtostrf(Get_Sonar(), 5, 2, ultrasonic_buff);
         client.publish("esp32/sonar", ultrasonic_buff);
-    }
 
-    Emotion_Show(emotion_task_mode); // Led matrix display function
-    WS2812_Show(ws2812_task_mode);   // Car color lights display function
+        // Photosensitive Data
+        dtostrf(Get_Photosensitive(), 5, 2, ultrasonic_buff);
+        client.publish("esp32/light", ultrasonic_buff);
+    }
 }
 
 // put function definitions here:
 void notifyClients()
 {
-    ws.textAll(String("hellow"));
+    ws.textAll("ok");
 }
 
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)

@@ -20,25 +20,16 @@ Dans `src/main.cpp` vous allez modifier les lignes suivantes:
 ```cpp
 // ...
 
-// Add your MQTT Broker IP address, example:
-// const char* mqtt_server = "192.168.1.144";
-const char *mqtt_server = "YOUR_MQTT_BROKER_IP_ADDRESS";
+char *ssid_wifi = "OnePlus 7 Pro";    // Le nom du réseau WiFi
+char *password_wifi = "33500a9695df"; // Le password du WiFi
 
-// Setup the desired IP address of your car
-IPAddress localIP(192, 168, 145, 49);
+const char *mqtt_server = "192.168.145.40"; // L'IP de votre broker MQTT
+const int mqtt_interval_ms = 5000;          // L'interval en ms entre deux envois de données
 
-IPAddress localGateway(192, 168, 145, 55);
-IPAddress localSubnet(255, 255, 255, 0);
+IPAddress localIP(192, 168, 145, 49); // l'IP que vous voulez donner à votre voiture
 
-//...
-
-void WiFi_Init()
-{
-    ssid_Router = "WIFI_NAME";    // Modify according to your router name
-    password_Router = "WIFI_PASSWORD"; // Modify according to your router password
-
-    // ...
-}
+IPAddress localGateway(192, 168, 145, 55); // L'IP de la gateway de votre réseau
+IPAddress localSubnet(255, 255, 255, 0);   // Le masque de sous réseau
 ```
 
 ## Communiquer avec la voiture
