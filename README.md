@@ -30,6 +30,9 @@ IPAddress localIP(192, 168, 145, 49); // l'IP que vous voulez donner à votre vo
 
 IPAddress localGateway(192, 168, 145, 55); // L'IP de la gateway de votre réseau
 IPAddress localSubnet(255, 255, 255, 0);   // Le masque de sous réseau
+
+// ...
+AsyncWebSocket ws("/ws"); // Changez le nom de ce point d'accès pour "sécuriser" l'accès à votre voiture
 ```
 
 ## Communiquer avec la voiture
