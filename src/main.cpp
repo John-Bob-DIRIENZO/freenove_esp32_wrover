@@ -21,15 +21,15 @@
 // https://randomnerdtutorials.com/esp32-static-fixed-ip-address-arduino-ide/
 // https://github.com/Freenove/Freenove_4WD_Car_Kit_for_ESP32/tree/master
 
-char *ssid_wifi = "Arcplexwifi";            // Le nom du réseau WiFi
-char *password_wifi = "Arcplexw1f1acce55!"; // Le password du WiFi
+char *ssid_wifi = "xxxxx";            // Le nom du réseau WiFi
+char *password_wifi = "xxxxx"; // Le password du WiFi
 
-const char *mqtt_server = "192.168.123.85"; // L'IP de votre broker MQTT
+const char *mqtt_server = "192.168.64.40"; // L'IP de votre broker MQTT
 const int mqtt_interval_ms = 5000;          // L'interval en ms entre deux envois de données
 
-IPAddress localIP(192, 168, 123, 220); // l'IP que vous voulez donner à votre voiture
+IPAddress localIP(192, 168, 64, 50); // l'IP que vous voulez donner à votre voiture
 
-IPAddress localGateway(192, 168, 123, 1); // L'IP de la gateway de votre réseau
+IPAddress localGateway(192, 168, 64, 136); // L'IP de la gateway de votre réseau
 IPAddress localSubnet(255, 255, 255, 0);  // Le masque de sous réseau
 
 IPAddress primaryDNS(8, 8, 8, 8);
@@ -72,7 +72,7 @@ void WiFi_Init()
 
 void setup()
 {
-    delay(5000);
+    // delay(5000);
 
     Serial.begin(115200);
     Serial.setDebugOutput(true);
@@ -147,37 +147,37 @@ void loop()
     WS2812_Show(ws2812_task_mode);   // Car color lights display function
 
     // The MQTT part
-    // if (!client.connected())
-    // {
-    //     reconnect();
-    // }
-    // client.loop();
+    if (!client.connected())
+    {
+        reconnect();
+    }
+    client.loop();
 
-    // long now = millis();
-    // if (now - last_message > mqtt_interval_ms)
-    // {
-    //     last_message = now;
+    long now = millis();
+    if (now - last_message > mqtt_interval_ms)
+    {
+        last_message = now;
 
-    //     // Les led et la batteries sont branchés tous les deux sur le pin 32
-    //     // du coup, lire la valeur de batterie fait freeze la batterie
-    //     // Battery level
-    //     // dtostrf(Get_Battery_Voltage(), 5, 2, buff);
-    //     // client.publish("esp32/battery", buff);
+        // Les led et la batteries sont branchés tous les deux sur le pin 32
+        // du coup, lire la valeur de batterie fait freeze la batterie
+        // Battery level
+        // dtostrf(Get_Battery_Voltage(), 5, 2, buff);
+        // client.publish("esp32/battery", buff);
 
-    //     // Track Read
-    //     Track_Read();
-    //     sensor_v = static_cast<int>(sensorValue[3]);
-    //     char const *n_char = std::to_string(sensor_v).c_str();
-    //     client.publish("esp32/track", n_char);
+        // Track Read
+        Track_Read();
+        sensor_v = static_cast<int>(sensorValue[3]);
+        char const *n_char = std::to_string(sensor_v).c_str();
+        client.publish("esp32/track", n_char);
 
-    //     // Ultrasonic Data
-    //     dtostrf(Get_Sonar(), 5, 2, ultrasonic_buff);
-    //     client.publish("esp32/sonar", ultrasonic_buff);
+        // Ultrasonic Data
+        dtostrf(Get_Sonar(), 5, 2, ultrasonic_buff);
+        client.publish("esp32/sonar", ultrasonic_buff);
 
-    //     // Photosensitive Data
-    //     dtostrf(Get_Photosensitive(), 5, 2, ultrasonic_buff);
-    //     client.publish("esp32/light", ultrasonic_buff);
-    // }
+        // Photosensitive Data
+        dtostrf(Get_Photosensitive(), 5, 2, ultrasonic_buff);
+        client.publish("esp32/light", ultrasonic_buff);
+    }
 }
 
 // put function definitions here:
